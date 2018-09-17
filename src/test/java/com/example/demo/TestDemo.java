@@ -1,8 +1,10 @@
 package com.example.demo;
 
 import com.example.demo.common.utils.date.DateTimeUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ import java.util.concurrent.*;
 /**
  * Created by zhouwei on 2018/1/2
  **/
+@Slf4j
 public class TestDemo {
 
     @Test
@@ -67,4 +70,45 @@ public class TestDemo {
         System.out.println(DateTimeUtil.formatTime(date));
 
     }
+
+    @Test
+    public void test4(){
+        File sourceFile = new File("F:\\tc_invoice_20180912.txt");
+        File targetFile = new File("F:\\sjsh_backId.txt");
+        BufferedReader br = null;
+        BufferedWriter bw = null;
+        try {
+            br = new BufferedReader(new InputStreamReader(new FileInputStream(sourceFile)));
+            bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(targetFile, true)));
+            String strLine = null;
+            int num = 1;
+            while ((strLine = br.readLine()) != null) {
+                String[] strS = strLine.split(",");
+                String str = strS[0]+","+strS[strS.length-1]+"\n";
+                bw.write(str);
+                if(num % 5000 == 0 ){
+                    bw.flush();
+                    log.info("第{}行解析完成", num);
+                }
+                num ++;
+            }
+            bw.flush();
+            log.info("第{}行解析完成", num);
+        } catch (Exception e) {
+            log.info("解析异常：", e);
+        } finally {
+            try {
+                if(null != br){
+                    br.close();
+                }
+                if(null != bw){
+                    bw.close();
+                }
+            } catch (IOException e) {
+                log.info("关闭流异常：", e);
+            }
+        }
+    }
+
+
 }
