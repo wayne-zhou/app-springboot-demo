@@ -23,6 +23,8 @@ public enum ExceptionCode {
 	/** 请求信息为空 */
 	REQ_INFO_EMPTY("0100", "请求信息不能为空"),
 
+	PARAM_INVALID("0101", "请求参数无效"),
+
 	;
 
 	/** 错误编码 */

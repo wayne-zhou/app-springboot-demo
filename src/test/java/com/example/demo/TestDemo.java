@@ -7,10 +7,7 @@ import org.junit.Test;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -73,27 +70,22 @@ public class TestDemo {
 
     @Test
     public void test4(){
-        File sourceFile = new File("F:\\tc_invoice_20180912.txt");
-        File targetFile = new File("F:\\sjsh_backId.txt");
+        String backId = "908872183084953601,911146723613806593,923890115091329025,933551668929523713,935368230275677185,936060679826461697,936060679826461702,936194665512989699,939770290043640838,943354322073445382,945566670792188929,951151408760251422,952410826583861249,953814825732165685,954883964345275439,958252571490022429,958274648368507911,958282402214734855,961633936956739586,962130655796547613,963723520469389313,969098828303323166,971798101641949203,973396779053896706,973832142486526983,973832142486526984,973832142490721280,974104617246023682,974160072722894885,975009430477499429,977897867836683276,978975529107470336,979228658910908418,980735588250701825,981097970160397363,981131771905331209,981131782747607051,981134470205952007,981134508114071559,981135225293918215,981137320176799751,981137544165216263,981139539211079687,981139791888535559,981139937258917895,981141722065293319,981141757616214023,981143610030575623,981145655244509191,981147687980388359,981151007268687879,981153403759775755,981156827263946763,981157190855577607,981157225781547015,981162463997480967,981162711000043531,981163503769636875,981164969574027271,981165525050871815,981363475588861953,981363475588861954,984743951795763201";
+        List<String> backIdList = Arrays.asList(backId.split(","));
+        File sourceFile = new File("F:\\105条漏推.txt");
+        File targetFile = new File("F:\\sjsh.txt");
         BufferedReader br = null;
         BufferedWriter bw = null;
         try {
             br = new BufferedReader(new InputStreamReader(new FileInputStream(sourceFile)));
             bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(targetFile, true)));
             String strLine = null;
-            int num = 1;
             while ((strLine = br.readLine()) != null) {
                 String[] strS = strLine.split(",");
-                String str = strS[0]+","+strS[strS.length-1]+"\n";
-                bw.write(str);
-                if(num % 5000 == 0 ){
-                    bw.flush();
-                    log.info("第{}行解析完成", num);
-                }
-                num ++;
+                if(backIdList.contains(strS[1]))
+                bw.write(strLine+"\n");
             }
             bw.flush();
-            log.info("第{}行解析完成", num);
         } catch (Exception e) {
             log.info("解析异常：", e);
         } finally {
