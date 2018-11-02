@@ -85,6 +85,17 @@ public class GraphMatrix<T> {
         }
     }
 
+    //查找指定顶点
+    public Vertex getVertex(T data){
+        Vertex v =null;
+        for (Vertex vertex : vertexes) {
+            if(vertex.getData().equals(data)){
+                v = vertex;
+            }
+        }
+        return v;
+    }
+
     /**
      * 获得顶点的出度
      */
@@ -154,8 +165,6 @@ public class GraphMatrix<T> {
         }
         return result;
     }
-
-
 
     /**
      * 深度优先遍历
@@ -242,27 +251,105 @@ public class GraphMatrix<T> {
         return sum;
     }
 
-
-
-    /**
-     * 将图内所有元素设置为初始状态
-     */
+   //将图内所有元素设置为初始状态
     private void initVisited(){
         for(int i = 0; i<maxSize; i++){
             vertexes[i].isVisited = false;
         }
     }
 
-    //查找指定顶点
-    private Vertex getVertex(T data){
-        Vertex v =null;
+    /**
+     * 最短路径 Dijkstra（迪杰斯特拉）算法
+     * 指定点到其它所有点的最短路径
+     */
+    public void Dijkstra(T data) throws Exception{
+        Vertex v = getVertex(data);
+        if(v == null){
+            log.info("查询顶点不存在");
+            throw new ApiException(ExceptionCode.PARAM_INVALID);
+        }
+
+        //未求出最短路径的点集合
+        ArrayList<Integer> unVisited=new ArrayList();
+        //已求出最短路径的点集合
+        ArrayList<Integer> hasVisited=new ArrayList();
+        //记录从起点到其他任意一点的路径长度
+        Integer distances[] = new Integer [maxSize];
+        //记录Path[i]表示从S到i的最短路径中，结点i之前的结点的编号,即对应点的前一个节点
+        Integer paths[] = new Integer [maxSize];
+
+        System.arraycopy(matrix[v.getIndex()], 0, distances, 0 , maxSize);
+        hasVisited.add(v.getIndex());
+        paths[v.getIndex()] = -1;
+
         for (Vertex vertex : vertexes) {
-            if(vertex.getData().equals(data)){
-                v = vertex;
+            if(v.getIndex() != vertex.getIndex()){
+                unVisited.add(vertex.getIndex());
             }
         }
-        return v;
+
+
+        while (!unVisited.isEmpty()){
+            Integer minIndex = pickMinInUnvisited(distances, unVisited);
+            if(minIndex == -1){
+                break;
+            }
+
+            hasVisited.add(minIndex);
+            unVisited.remove(minIndex);
+            for(int i = 0; i <distances.length; i++){
+                if(distances[i] > distances[minIndex] + matrix[minIndex][i]){
+                    distances[i] =  distances[minIndex] + matrix[minIndex][i];
+                    paths[i] = minIndex;
+                }
+            }
+        }
+
+        //输出结果
+        for (int j = 0; j < distances.length; j++) {
+            if(v.getIndex() != j){
+                if(distances[j].equals(MAX_WEIGHT)){
+                    System.out.println(String.format("%s  到 %s  没有路径", data, vertexes[j].getData()));
+                }else{
+                    System.out.println(String.format("%s  到 %s 的最短路径： %s", data, vertexes[j].getData(), distances[j]));
+                    List<Object> source = printPath(paths, v.getIndex(), j);
+                    System.out.println("访问路径：" + source.toString());
+                }
+            }
+        }
     }
+
+   //从未求出最短路径的集合中找到与原点最近的点
+    private Integer pickMinInUnvisited(Integer distances[], ArrayList<Integer> unVisited) {
+        Integer minIndex = -1;
+        Integer min = MAX_WEIGHT;
+        for (int i = 0; i < distances.length; i++) {
+            if (unVisited.contains(i)) {
+                if (distances[i] < min) {
+                    minIndex = i;
+                    min = distances[i];
+                }
+            }
+        }
+        return minIndex;
+    }
+
+    private List<Object> printPath(Integer paths[], Integer s, Integer t){
+        List<Object> source = new ArrayList<>();
+        while(t  != s){
+            source.add(vertexes[t].getData());
+            t = paths[t];
+            if(t == null){
+                break;
+            }
+        }
+        source.add(s);
+        //路径倒置,需要反置回来
+        Collections.reverse(source);
+        return source;
+    }
+
+
 
     /**
      * 顶点
@@ -343,6 +430,10 @@ public class GraphMatrix<T> {
         System.out.println("prim 最小生成树");
         int sumMinWeight = graph.createMinSpanTreePrim();
         System.out.println("sumMinWeight:" + sumMinWeight);
+
+
+        System.out.println("\n Dijkstra: 最短路径");
+        graph.Dijkstra("0");
     }
 
 }
