@@ -1,14 +1,18 @@
 package com.example.demo;
 
-import com.example.demo.common.utils.date.DateTimeUtil;
+import com.example.demo.common.utils.JsonUtil;
+import com.example.demo.common.utils.http.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.springframework.util.CollectionUtils;
 
 import java.io.*;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by zhouwei on 2018/1/2
@@ -63,29 +67,55 @@ public class TestDemo {
 
     @Test
     public void test3(){
-        LocalDateTime date = DateTimeUtil.minu(LocalDateTime.now(), 440, ChronoUnit.MINUTES);
-        System.out.println(DateTimeUtil.formatTime(date));
+        String json = "{\"result\": 1,\"resultMessage\": \"成功\",\"resultContent\": {},\"success\": true}";
+        String errMsg = JsonUtil.jsonToMap(json).get("resultContent").toString();
+        System.out.println(errMsg);
 
     }
 
+
     @Test
     public void test4(){
-        String backId = "908872183084953601,911146723613806593,923890115091329025,933551668929523713,935368230275677185,936060679826461697,936060679826461702,936194665512989699,939770290043640838,943354322073445382,945566670792188929,951151408760251422,952410826583861249,953814825732165685,954883964345275439,958252571490022429,958274648368507911,958282402214734855,961633936956739586,962130655796547613,963723520469389313,969098828303323166,971798101641949203,973396779053896706,973832142486526983,973832142486526984,973832142490721280,974104617246023682,974160072722894885,975009430477499429,977897867836683276,978975529107470336,979228658910908418,980735588250701825,981097970160397363,981131771905331209,981131782747607051,981134470205952007,981134508114071559,981135225293918215,981137320176799751,981137544165216263,981139539211079687,981139791888535559,981139937258917895,981141722065293319,981141757616214023,981143610030575623,981145655244509191,981147687980388359,981151007268687879,981153403759775755,981156827263946763,981157190855577607,981157225781547015,981162463997480967,981162711000043531,981163503769636875,981164969574027271,981165525050871815,981363475588861953,981363475588861954,984743951795763201";
-        List<String> backIdList = Arrays.asList(backId.split(","));
-        File sourceFile = new File("F:\\105条漏推.txt");
-        File targetFile = new File("F:\\sjsh.txt");
+        String url ="";
+        File sourceFile = new File("F:\\123.txt");
+        File targetFile = new File("F:\\123_errMsg.txt");
+
+        ExecutorService threadPoo = Executors.newFixedThreadPool(5) ;
+
         BufferedReader br = null;
         BufferedWriter bw = null;
         try {
             br = new BufferedReader(new InputStreamReader(new FileInputStream(sourceFile)));
             bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(targetFile, true)));
             String strLine = null;
+            int n = 0;
+            AtomicInteger count = new AtomicInteger(0);
+
+            List<Param> list = new ArrayList<Param>(100);
             while ((strLine = br.readLine()) != null) {
+                n++;
                 String[] strS = strLine.split(",");
-                if(backIdList.contains(strS[1]))
-                bw.write(strLine+"\n");
+                Long listingId = Long.parseLong(strS[0]);
+                Integer num = Integer.parseInt(strS[1]);
+
+                list.add(new Param(listingId, num));
+                if(n % 100 == 0){
+                    threadPoo.submit(new ThreadHandle(url, list, bw, count));
+                    list = new ArrayList<Param>(100);
+                    System.out.println("当前提交到：" + n);
+                }
             }
+
+            if(!CollectionUtils.isEmpty(list)){
+                threadPoo.submit(new ThreadHandle(url, list, bw, count));
+            }
+            System.out.println("提交完毕：" + n);
+
+            threadPoo.shutdown();
+            threadPoo.awaitTermination(300, TimeUnit.MINUTES); //阻塞主线程，等待线程池结束
+
             bw.flush();
+            System.out.println("处理完毕：" + n);
         } catch (Exception e) {
             log.info("解析异常：", e);
         } finally {
@@ -99,6 +129,63 @@ public class TestDemo {
             } catch (IOException e) {
                 log.info("关闭流异常：", e);
             }
+        }
+    }
+
+    class ThreadHandle implements Runnable {
+        String url;
+
+        List<Param> list;
+
+        BufferedWriter bw;
+
+        AtomicInteger count;
+
+        public ThreadHandle(String url, List<Param> list, BufferedWriter bw, AtomicInteger count) {
+            this.url = url;
+            this.list = list;
+            this.bw = bw;
+            this.count = count;
+        }
+
+        @Override
+        public void run() {
+            try {
+                String resp = HttpUtil.postHttpRequest(url, list);
+                String msg = JsonUtil.jsonToMap(resp).get("resultContent").toString();
+                if (!"{}".equals(msg)) {
+                    bw.write(msg + "\n");
+                }
+                System.out.println("当前处理到"+ count.addAndGet(list.size()));
+            }catch (Exception e){
+                log.error("执行异常： list:{}, 异常：", JsonUtil.objectToJson(list) , e);
+            }
+        }
+    }
+
+    static class Param{
+        Long listingId;
+        Integer number;
+
+        public Param(Long listingId, Integer number) {
+            this.listingId = listingId;
+            this.number = number;
+        }
+
+        public Long getListingId() {
+            return listingId;
+        }
+
+        public void setListingId(Long listingId) {
+            this.listingId = listingId;
+        }
+
+        public Integer getNumber() {
+            return number;
+        }
+
+        public void setNumber(Integer number) {
+            this.number = number;
         }
     }
 

@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class HttpUtil {
 
-	protected static Logger loggerg = LoggerFactory.getLogger(HttpUtil.class);
+	protected static Logger logger = LoggerFactory.getLogger(HttpUtil.class);
 
 	/**
 	 * Http request ：Post
@@ -59,11 +59,11 @@ public class HttpUtil {
 			if (resStatu == HttpStatus.SC_OK) {
 				responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
 			} else {
-				loggerg.info(url + ", Post invoke fail, response status: " + resStatu);
+				logger.info(url + ", Post invoke fail, response status: " + resStatu);
 			}
 			return responseString;
 		} catch (Exception e) {
-			loggerg.error("Error", e);
+			logger.error("Error", e);
 			throw e;
 		} finally {
 			if (response != null) {
@@ -71,7 +71,7 @@ public class HttpUtil {
 					EntityUtils.consume(response.getEntity());
 					response.close();
 				} catch (Exception e) {
-					loggerg.error("Error", e);
+					logger.error("Error", e);
 				}
 			}
 		}
